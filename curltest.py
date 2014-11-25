@@ -1,5 +1,6 @@
 import subprocess
 from classes import Router
+import time
 
 
 def download(proxy=1, file_zize='10M', run_num=0, rate='', delay=''):
@@ -35,9 +36,11 @@ def test_all_combos(Q):
        for run_num in range(50):
             for delay in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 set_rate_delay(Q, 0, delay)
+                time.sleep(0.1)
                 print "DONE delay "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
                 for proxy in [0, 1]:
                     download(proxy, file_size, run_num, '0', str(delay))
+        time.sleep(1)
     return
 
 
@@ -46,6 +49,7 @@ def quick_test(Q):
     for run_num in range(5):
         for delay in [1, 10, 30, 100]:
             set_rate_delay(Q, 0, delay)
+            time.sleep(0.3)
             print "DONE rate, delay "+str(0)+", "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
             for proxy in [0, 1]:
                 download(proxy, file_size, run_num, '0', str(delay))
