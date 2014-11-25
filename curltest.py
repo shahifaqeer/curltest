@@ -1,5 +1,6 @@
 import subprocess
 from classes import Router
+import paramiko
 
 
 def download(proxy=1, file_zize='10M', run_num=0, rate='', delay=''):
@@ -38,8 +39,24 @@ def test_all_combos(Q):
                 print "DONE delay "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
                 for proxy in [0, 1]:
                     download(proxy, file_size, run_num, '0', str(delay))
+                    if proxy == 1:
+                        clear_polipo_cache()
     return
 
+
+def clear_polipo_cache():
+    ssh = paramiko.SSHClient()
+    ssh.load_host_keys("~/.ssh/known_hosts")
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    my_key = paramiko.RSAKey.from_private_key_file("~/.ssh/id_rsa")
+    ssh.connect('10.0.2.1', username = "sarthak", pkey = my_key)
+    cmd = 'sudo kill -USR1 $(pgrep polipo); sudo polipo -x; sudo kill -USR2 $(pgrep polipo)'
+    i, o, e = ssh.exec_command(cmd)
+    for line in o.readlines():
+        print line
+    for line in e.readlines():
+        print line
+    return
 
 def quick_test(Q):
     file_size = '10M'

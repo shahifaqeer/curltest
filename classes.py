@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from __future__ import division
-
 import const
 import time
 import socket
