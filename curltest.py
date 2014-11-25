@@ -33,7 +33,7 @@ def set_rate_delay(Q, rate, delay):
 
 def test_all_combos(Q):
     for file_size in ['10M', '2M', '500K']:
-       for run_num in range(50):
+        for run_num in range(50):
             for delay in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 set_rate_delay(Q, 0, delay)
                 time.sleep(0.1)
