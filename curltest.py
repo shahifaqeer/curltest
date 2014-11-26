@@ -39,17 +39,19 @@ def set_rate_delay(Q, rate, delay):
     return 0
 
 def test_all_combos(Q, M):
-    for file_size in ['500K', '2M', '10M']:
-        for run_num in range(20):
-            for delay in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                set_rate_delay(Q, 0, delay)
-                time.sleep(0.1)
-                print "DONE delay "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
-                for proxy in [0, 1]:
-                    download(proxy, file_size, run_num, '0', str(delay))
-                    if proxy == 0:
-                        clear_polipo_cache(M)
-        time.sleep(1)
+    for rate in [0, 5, 10, 15, 20, 25]:
+        for file_size in ['500K', '2M', '10M']:
+            M.remoteCommand('sudo sh clearcache.sh')
+            for run_num in range(20):
+                for delay in [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                    set_rate_delay(Q, rate, delay)
+                    time.sleep(0.1)
+                    print "DONE delay "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
+                    for proxy in [0, 1]:
+                        download(proxy, file_size, run_num, str(rate), str(delay))
+                        if proxy == 1:
+                            M.remoteCommand('sudo sh clearcache.sh')
+            time.sleep(1)
     return
 
 def clear_polipo_cache(M):
@@ -60,13 +62,18 @@ def quick_test(Q, M):
     file_size = '500K'
     for run_num in range(5):
         for delay in [1, 10, 30, 100]:
-            set_rate_delay(Q, 0, delay)
+            set_rate_delay(Q, 1, delay)
             time.sleep(0.1)
-            print "DONE rate, delay "+str(0)+", "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
+            print "DONE rate, delay "+str(1)+", "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
             for proxy in [0, 1]:
                 download_DEBUG(proxy, file_size, run_num, '0', str(delay))
                 if proxy == 0:
-                    clear_polipo_cache(M)
+                    print "clear cache"
+                    M.remoteCommand('sudo kill -USR1 $(pgrep polipo)')
+                    M.remoteCommand('sleep 0.1')
+                    M.remoteCommand('sudo polipo -x')
+                    M.remoteCommand('sudo kill -USR2 $(pgrep polipo)')
+                    #clear_polipo_cache(M)
     return
 
 
@@ -77,10 +84,27 @@ if __name__=="__main__":
     M = Router('10.0.2.1', 'sarthak', 'sarthak123', 'Q')
 
     #quick_test(Q)
-    #test_all_combos(Q, M)
-    quick_test(Q, M)
+    start_t = time.time()
 
-    #download(1, '2M', 0)
-    #download(0, '2M', 0)
+    test_all_combos(Q, M)
+
+    set_rate_delay(Q, 0, 0)
+    done_t = time.time()
+    print "DONE ", (done_t - start_t)
+    #quick_test(Q, M)
+    '''
+    set_rate_delay(Q, 1, 100)
+
+    M.remoteCommand('sudo sh clearcache.sh')
+    download_DEBUG(0, '500K', 0, '1', '100')
+    download_DEBUG(1, '500K', 0, '1', '100')
+    M.remoteCommand('sudo sh clearcache.sh')
+    download_DEBUG(0, '500K', 1, '1', '100')
+    download_DEBUG(1, '500K', 1, '1', '100')
+    M.remoteCommand('sudo sh clearcache.sh')
+    download_DEBUG(0, '500K', 2, '1', '100')
+    download_DEBUG(1, '500K', 2, '1', '100')
+    M.remoteCommand('sudo sh clearcache.sh')
+    '''
     Q.host.close()
     M.host.close()
