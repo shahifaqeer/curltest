@@ -1,10 +1,6 @@
 import subprocess
 from classes import Router
-<<<<<<< HEAD
-import paramiko
-=======
 import time
->>>>>>> 70b2ddbee4fc78d1042f239d0c2cff1bd3996060
 
 
 def download(proxy=1, file_zize='10M', run_num=0, rate='', delay=''):
@@ -16,13 +12,20 @@ def download(proxy=1, file_zize='10M', run_num=0, rate='', delay=''):
     subprocess.check_output(cmd, shell=True)
     return 0
 
-def set_rate_delay(Q, rate, delay):
+def download_DEBUG(proxy=1, file_zize='10M', run_num=0, rate='', delay=''):
+    outfile = "curl-proxy_"+str(proxy)+"-file_"+file_zize+"-rate_"+rate+"-delay_"+delay+"-run_"+str(run_num)+".log"
+    cmd = "curl 10.0.0.1:8055/test" + file_zize + ".gz -o /dev/null"
+    if proxy == 1:
+        cmd += " -x http://10.0.2.1:3128"
+    # BLOCKING CMD
+    o = subprocess.check_output(cmd, shell=True)
+    print o
+    return
 
+def set_rate_delay(Q, rate, delay):
     rate_bits = str(rate)
     delay_ms = str(delay)
-
-    Q.remoteCommand('tc qdisc del dev br-lan root;tc qdisc add dev br-lan root netem delay 40ms;tc qdisc show dev br-lan')
-
+    Q.remoteCommand('tc qdisc del dev br-lan root')
     if rate != 0:
         Q.remoteCommand('sh ratelimit4.sh eth0 '+rate_bits+' '+delay_ms)
         Q.remoteCommand('sh ratelimit4.sh eth1 '+rate_bits+' '+delay_ms)
@@ -35,47 +38,35 @@ def set_rate_delay(Q, rate, delay):
             Q.remoteCommand('tc qdisc del dev br-lan root')
     return 0
 
-def test_all_combos(Q):
-    for file_size in ['10M', '2M', '500K']:
-        for run_num in range(50):
+def test_all_combos(Q, M):
+    for file_size in ['500K', '2M', '10M']:
+        for run_num in range(20):
             for delay in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 set_rate_delay(Q, 0, delay)
                 time.sleep(0.1)
                 print "DONE delay "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
                 for proxy in [0, 1]:
                     download(proxy, file_size, run_num, '0', str(delay))
-<<<<<<< HEAD
-                    if proxy == 1:
-                        clear_polipo_cache()
-=======
+                    if proxy == 0:
+                        clear_polipo_cache(M)
         time.sleep(1)
->>>>>>> 70b2ddbee4fc78d1042f239d0c2cff1bd3996060
     return
 
-
-def clear_polipo_cache():
-    ssh = paramiko.SSHClient()
-    ssh.load_host_keys("~/.ssh/known_hosts")
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    my_key = paramiko.RSAKey.from_private_key_file("~/.ssh/id_rsa")
-    ssh.connect('10.0.2.1', username = "sarthak", pkey = my_key)
-    cmd = 'sudo kill -USR1 $(pgrep polipo); sudo polipo -x; sudo kill -USR2 $(pgrep polipo)'
-    i, o, e = ssh.exec_command(cmd)
-    for line in o.readlines():
-        print line
-    for line in e.readlines():
-        print line
+def clear_polipo_cache(M):
+    M.remoteCommand('sudo sh clearcache.sh')
     return
 
-def quick_test(Q):
-    file_size = '10M'
+def quick_test(Q, M):
+    file_size = '500K'
     for run_num in range(5):
         for delay in [1, 10, 30, 100]:
             set_rate_delay(Q, 0, delay)
-            time.sleep(0.3)
+            time.sleep(0.1)
             print "DONE rate, delay "+str(0)+", "+str(delay)+ " Run number "+str(run_num)+" file_size " + file_size
             for proxy in [0, 1]:
-                download(proxy, file_size, run_num, '0', str(delay))
+                download_DEBUG(proxy, file_size, run_num, '0', str(delay))
+                if proxy == 0:
+                    clear_polipo_cache(M)
     return
 
 
@@ -83,9 +74,13 @@ if __name__=="__main__":
 
     #R = Router('192.168.10.1', 'root', 'passw0rd', 'R')
     Q = Router('10.0.1.1', 'root', 'passw0rd', 'Q')
+    M = Router('10.0.2.1', 'sarthak', 'sarthak123', 'Q')
 
     #quick_test(Q)
-    test_all_combos(Q)
+    #test_all_combos(Q, M)
+    quick_test(Q, M)
+
     #download(1, '2M', 0)
     #download(0, '2M', 0)
     Q.host.close()
+    M.host.close()
