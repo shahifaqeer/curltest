@@ -82,7 +82,7 @@ def test_all_combos(Q, M, S, file_size='500K'):
     return
 
 def test_access(Q, M, S):
-    for run_num in range(20):
+    for run_num in range(50):
         for access in ['good', 'bad']:
             #good access
             if access == 'good':
@@ -106,7 +106,7 @@ def test_access(Q, M, S):
                     clear_polipo_cache(M, S)
                     killtcpdump(M)
         print time.time(), ": DONE run_num "+str(run_num)
-        return
+    return
 
 def clear_polipo_cache(M, S):
     M.remoteCommand('sudo sh clearcache.sh')
