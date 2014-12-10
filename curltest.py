@@ -29,7 +29,11 @@ def download_DEBUG(proxy=1, file_size='10M', run_num=0, rate='', delay=''):
     print o
     return
 
-def tcpdump(M, proxy, file_size, run_num, rate, delay):
+def tcpdump(M, S, proxy, file_size, run_num, rate, delay):
+    # S
+    outfile = "tcpdump-proxy_"+str(proxy)+"-file_"+file_size+"-rate_"+rate+"-delay_"+delay+"-run_"+str(run_num)+"_S.pcap"
+    cmd = "sudo tcpdump -i eth1 -s 300 -n -p -U -w /home/gtnoise/curltest/"+outfile
+    S.remoteCommand(cmd)
     # M
     outfile = "tcpdump-proxy_"+str(proxy)+"-file_"+file_size+"-rate_"+rate+"-delay_"+delay+"-run_"+str(run_num)+"_M.pcap"
     cmd = "sudo tcpdump -i eth1 -s 300 -n -p -U -w /home/sarthak/test/"+outfile
@@ -40,16 +44,26 @@ def tcpdump(M, proxy, file_size, run_num, rate, delay):
     subprocess.call(cmd, shell=True)
     return
 
-def killtcpdump(M):
+def killtcpdump(M, S):
     cmd = "sudo killall tcpdump"
+    S.remoteCommand(cmd)
     M.remoteCommand(cmd)
     subprocess.check_output(cmd, shell=True)
     return
 
 def transferdump(M):
-    cmd = "scp -r sarthak@10.0.2.1:test/* /home/gtnoise/test/"
-    subprocess.check_output(cmd, shell=True)
+    # M
+    cmd = "scp -r /home/sarthak/test/*.pcap gtnoise@10.0.0.1:/home/gtnoise/curltest/"
+    M.remoteCommand(cmd)
+    # A
+    cmd2 = "scp -r /home/gtnoise/test/*.pcap gtnoise@10.0.0.1:/home/gtnoise/curltest/"
+    subprocess.check_output(cmd2, shell=True)
+    cmd2 = "scp -r /home/gtnoise/test/*.log gtnoise@10.0.0.1:/home/gtnoise/curltest/"
+    subprocess.check_output(cmd2, shell=True)
+    # rm
     M.remoteCommand("sudo rm -f /home/sarthak/test/*.pcap")
+    subprocess.check_output("sudo rm -f /home/gtnoise/test/*.log", shell=True)
+    subprocess.check_output("sudo rm -f /home/gtnoise/test/*.pcap", shell=True)
     return
 
 def set_rate_delay(Q, rate, delay):
@@ -83,14 +97,24 @@ def test_all_combos(Q, M, S, file_size='500K'):
 
 def test_access(Q, M, S):
     for run_num in range(50):
-        for access in ['good', 'bad']:
+        #for access in ['good', 'bad', 'ugly', 'fugly', 'default']:
+        for access in ['fugly']:
             #good access
             if access == 'good':
                 rate = 100
                 delay = 5
-            else:
+            elif access == 'bad':
                 rate = 10
                 delay = 50
+            elif access=='ugly':
+                rate = 100
+                delay = 50
+            elif access=='fugly':
+                rate = 10
+                delay = 5
+            else:
+                rate = 100
+                delay = 20
             set_rate_delay(Q, rate, delay)
 
             for file_size in ['500K', '10M']:
@@ -100,11 +124,11 @@ def test_access(Q, M, S):
                 proxies = range(3)
                 shuffle(proxies)
                 for proxy in proxies:
-                    tcpdump(M, proxy, file_size, run_num, str(rate), str(delay))
+                    tcpdump(M, S, proxy, file_size, run_num, str(rate), str(delay))
                     time.sleep(0.1)
                     download(proxy, file_size, run_num, str(rate), str(delay))
                     clear_polipo_cache(M, S)
-                    killtcpdump(M)
+                    killtcpdump(M, S)
         print time.time(), ": DONE run_num "+str(run_num)
     return
 
